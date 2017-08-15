@@ -1,0 +1,240 @@
+import os
+from mpfit import mpfit
+import numpy as np
+from scipy.interpolate import splrep, splev
+import ss_readfits
+import matplotlib.pyplot as plt
+from scipy.integrate import simps
+from astropy.stats import median_absolute_deviation
+
+#c_data, c_tags = ss_readfits.ss_readfits("conv_c2h2.fits")
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+
+#print (1)
+
+
+up = (16, 20)
+
+
+
+
+#print(2)
+
+def myfunct(p, fjac=None, x=None, y=None, err=None):
+	# Parameter values are passed in "p"
+	# If FJAC!=None then partial derivatives must be comptuer.
+	# FJAC contains an array of len(p), where each entry
+	# is 1 if that parameter is free and 0 if it is fixed.
+	model = F(x, p)
+	# Non-negative status value means MPFIT should continue, negative means
+	# stop the calculation.
+	status = 0
+	return([status, (y-model)/err])
+
+def F(x, p):
+    return p[0] * (x**1) + p[1] 
+#def fun(p, x, y):
+    #return model(p, x) - y
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_30'):
+    filenameC = files
+
+eqwC = []
+mC = []
+mvC = []
+
+
+
+for i in range(len(filenameC)):
+    #print (3)
+    if True:
+        #print (filename[i])
+        wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/' + filenameC[i], usecols=0)
+        flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/' + filenameC[i], usecols=1)
+        v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/' + filenameC[i], usecols=2)
+
+	
+        #print wlen_low
+
+	wlen_up = wlen[wlen >= up[0]]
+        wlen_up = wlen_up[wlen_up <= up[1]]
+        #print wlen_up
+	
+
+	flux_up = flux[wlen >= up[0]]
+        flux_up = flux_up[:len(wlen_up)]
+
+	
+
+	v_up = v[wlen >= up[0]]
+        v_up = v_up[:len(wlen_up)]
+
+        x = wlen_up
+        y = flux_up
+        err = v_up
+
+        start = np.where(wlen == wlen_up[-1])
+        start = start[0][0]
+        stop = np.where(wlen <= 30)
+        stop = stop[0][-1]
+        
+
+        p0 = np.ones(2)
+        
+        #print ('Enter')
+        fa = {'x': x, 'y': y, 'err': err}
+        
+        m = mpfit(myfunct, p0, functkw = fa)
+        
+        mflux = F(wlen[start:stop + 1], m.params)
+        norm_flux = flux[start:stop + 1] / mflux
+
+        
+	
+	eqw = simps(1-norm_flux, wlen[start:stop + 1])
+        eqwC.append(eqw)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+        mC.append(np.log10(g_data['MLR'][gram[0]]))
+        tmpm = []
+        for item in gram:
+	    tmpm.append(g_data['MLR'][item])
+        mvC.append(median_absolute_deviation(tmpm))
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_30'):
+    filenameE = files
+
+eqwE = []
+mE = []
+mvE = []
+
+
+
+for i in range(len(filenameE)):
+    #print (3)
+    if True:
+        #print (filename[i])
+        wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filenameE[i], usecols=0)
+        flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filenameE[i], usecols=1)
+        v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filenameE[i], usecols=2)
+
+	
+        #print wlen_low
+
+	wlen_up = wlen[wlen >= up[0]]
+        wlen_up = wlen_up[wlen_up <= up[1]]
+        #print wlen_up
+	
+
+	flux_up = flux[wlen >= up[0]]
+        flux_up = flux_up[:len(wlen_up)]
+
+	
+
+	v_up = v[wlen >= up[0]]
+        v_up = v_up[:len(wlen_up)]
+
+        x = wlen_up
+        y = flux_up
+        err = v_up
+
+        start = np.where(wlen == wlen_up[-1])
+        start = start[0][0]
+        stop = np.where(wlen <= 30)
+        stop = stop[0][-1]
+
+        p0 = np.ones(2)
+        
+        #print ('Enter')
+        fa = {'x': x, 'y': y, 'err': err}
+        
+        m = mpfit(myfunct, p0, functkw = fa)
+        
+        mflux = F(wlen[start:stop + 1], m.params)
+        norm_flux = flux[start:stop + 1] / mflux
+
+	eqw = simps(1-norm_flux, wlen[start:stop + 1])
+        eqwE.append(eqw)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+        mE.append(np.log10(g_data['MLR'][gram[0]]))
+        tmpm = []
+        for item in gram:
+	    tmpm.append(g_data['MLR'][item])
+        mvE.append(median_absolute_deviation(tmpm))
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/VRO_30'):
+    filenameV = files
+
+eqwV = []
+mV = []
+mvV = []
+
+
+
+for i in range(len(filenameV)):
+    #print (3)
+    if True:
+        #print (filename[i])
+        wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/VRO/' + filenameV[i], usecols=0)
+        flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/VRO/' + filenameV[i], usecols=1)
+        v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/VRO/' + filenameV[i], usecols=2)
+
+	
+        #print wlen_low
+
+	wlen_up = wlen[wlen >= up[0]]
+        wlen_up = wlen_up[wlen_up <= up[1]]
+        #print wlen_up
+	
+
+	flux_up = flux[wlen >= up[0]]
+        flux_up = flux_up[:len(wlen_up)]
+
+	
+
+	v_up = v[wlen >= up[0]]
+        v_up = v_up[:len(wlen_up)]
+
+        x = wlen_up
+        y = flux_up
+        err = v_up
+
+        start = np.where(wlen == wlen_up[-1])
+        start = start[0][0]
+        stop = np.where(wlen <= 30)
+        stop = stop[0][-1]
+        
+
+        p0 = np.ones(2)
+        
+        #print ('Enter')
+        fa = {'x': x, 'y': y, 'err': err}
+        
+        m = mpfit(myfunct, p0, functkw = fa)
+        
+        mflux = F(wlen[start:stop + 1], m.params)
+        norm_flux = flux[start:stop + 1] / mflux
+
+	eqw = simps(1-norm_flux, wlen[start:stop + 1])
+        eqwV.append(eqw)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+        mV.append(np.log10(g_data['MLR'][gram[0]]))
+        tmpm = []
+        for item in gram:
+	    tmpm.append(g_data['MLR'][item])
+        mvV.append(median_absolute_deviation(tmpm))
+
+
+        
+
+plt.errorbar(mC, eqwC, None, None, 'ro', ms = 10, lw = 2)
+plt.errorbar(mE, eqwE, None, None, 'bo', ms = 10, lw = 2)
+plt.errorbar(mV, eqwV, None, None, 'go', ms = 10, lw = 2)
+plt.grid(True)
+plt.xlabel('mass loss rate')
+plt.ylabel('Equivalent Width at 30 micron')
+plt.show()
+
+
+
+        
+

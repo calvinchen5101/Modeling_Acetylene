@@ -1,0 +1,82 @@
+import ss_readfits
+import numpy as np
+from scipy.interpolate import splrep, splev
+import os
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/2012/1300.fits")
+interwlen = wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4001_spec.txt', usecols=0)
+
+
+for root, dirs, files in os.walk('/asiaa/home/ssp201701/CAGB/ECAGB'):
+    filename = files
+
+
+
+
+
+iii = 0
+while iii < len(filename):
+    fff = open('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012/' + filename[iii], 'w')
+    fff.write('GRAM\t')
+    fff.write('c2h2\t')
+    fff.write('chi_tot\n')
+    
+    
+    wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filename[iii], usecols=0)
+    flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filename[iii], usecols=1)
+    v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filename[iii], usecols=2)
+    
+    if wlen[0] > 7:
+        clip1 = 0
+
+    if wlen[-1] < 20:
+        clip = len(wlen)
+    
+    for l in range(len(wlen)):
+        if wlen[l-1] < 7 and wlen[l] >= 7:
+	    clip1 = l
+        elif wlen[l] > 20:
+            clip = l
+            break
+    
+ 
+    wlen = wlen[clip1:clip]
+    flux = flux[clip1:clip]
+    v = v[clip1:clip]
+
+    # loop through all dust model 
+    rrr = []
+
+    for i in range(len(g_data['GRAMS'])):
+        gramflux = g_data['Fspec'][i]
+        spl = splrep(interwlen, gramflux, k = 3)
+        ngflux = splev(wlen, spl)
+        
+        r_lst = ((ngflux - flux)/v) ** 2
+        r = r_lst.mean()
+        rrr.append((str(g_data['GRAMS'][i]), str(g_data['C2H2'][i]), r))
+
+    all_data = sorted(rrr, key=lambda r: r[2])
+    for i in range(2000):
+        fff.write(all_data[i][0] + '\t')
+        fff.write(all_data[i][1] + '\t')
+        fff.write('%.5E' % all_data[i][2] + '\n')
+        #break ###
+        print i
+    fff.close()      
+    print ('END')
+    #break ###
+    iii += 1
+
+
+print ('REAL END')
+
+#import sort_ECAGB
+#import ERO_2000
+    
+        
+    
+
+        
+
+    

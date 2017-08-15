@@ -1,0 +1,64 @@
+#!/bin/sh
+#this line is a comment; it is ignored during execution
+#you can put any commands that you would normally type into the command line in here.
+#for example, this shell script just creates a directory
+
+python mask_ECAGB1000.py
+python mask_ECAGB2000.py
+python mask_ECAGB3000.py
+python mask_ECAGB4000.py
+python mask_ECAGB5000.py
+python mask_ECAGB6000.py
+python mask_ECAGB7000.py
+python mask_ECAGB8000.py
+python mask_ECAGB9000.py
+python mask_ECAGB10000.py
+python mask_ECAGB11000.py
+python mask_ECAGB12000.py
+python mask_ECAGB13000.py
+python sort_ECAGB.py
+
+
+python mask_CE342000.py
+python mask_CE343000.py
+python mask_CE344000.py
+python mask_CE345000.py
+python mask_CE346000.py
+python mask_CE347000.py
+python mask_CE348000.py
+python mask_CE349000.py
+python mask_CE3410000.py
+python mask_CE3411000.py
+python mask_CE3412000.py
+python mask_CE3413000.py
+python sort_CE34.py
+
+python mask_VRO1000.py
+python mask_VRO2000.py
+python mask_VRO3000.py
+python mask_VRO4000.py
+python mask_VRO5000.py
+python mask_VRO6000.py
+python mask_VRO7000.py
+python mask_VRO8000.py
+python mask_VRO9000.py
+python mask_VRO10000.py
+python mask_VRO11000.py
+python mask_VRO12000.py
+python mask_VRO13000.py
+python sort_VRO.py
+
+python mask_ERO1000.py
+python mask_ERO2000.py
+python mask_ERO3000.py
+python mask_ERO4000.py
+python mask_ERO5000.py
+python mask_ERO6000.py
+python mask_ERO7000.py
+python mask_ERO8000.py
+python mask_ERO9000.py
+python mask_ERO10000.py
+python mask_ERO11000.py
+python mask_ERO12000.py
+python mask_ERO13000.py
+python sort_ERO.py

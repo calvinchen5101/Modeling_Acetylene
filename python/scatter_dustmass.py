@@ -1,0 +1,205 @@
+""" plot the dust mass vs gas mass figure in the paper
+"""
+
+
+import ss_readfits
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from astropy.stats import median_absolute_deviation
+import matplotlib
+from matplotlib import rc
+
+rc('font', **{'family':'serif','serif':['Palatino']})
+rc('text', usetex=True)
+
+ms = 1.98892e30 #kg
+G = 6.67e-11 #mks
+vexp = 10 * 1000 * 60 * 60 * 24 * 365 # m/yr
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/2012conv_C2H2.fits")
+
+
+r_loc = 100
+plt.figure(figsize = (20,20))
+plt.grid(True)
+matplotlib.rcParams.update({'font.size': 35})
+
+plt.xlabel(r'dust mass [$M_{\odot}$]')
+plt.ylabel(r'gas mass [$M_{\odot}$]')
+
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_2012good'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+nC = []
+
+mC = []
+nvC = []
+    
+mvC = []
+
+for i in range(len(filenameC)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+
+
+    
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        mlr = g_data['MLR'][gram[j]] #Msun/yr
+        rin = g_data['Rin'][gram[j]] #Rstar
+        rout = rin * 1000 #Rstar
+        mass = g_data['Mass'][gram[j]] * ms #kg
+        
+        gravity = (10**g_data['logg'][gram[j]])/100 #m/s2
+     
+        r = (G * mass / gravity)**0.5 * rout #m
+        rsqr = G * mass / gravity * rin * rin #m2
+
+        dust = mlr * r/vexp #Msun
+        tmpm.append(dust)
+        
+        h2_n = 10**(c_data['logN'][c2h2[j]]) * 2e4 * 10000 #m-2
+        h2_m = h2_n * 4 * np.pi * rsqr * r_loc * 2 / 6.02e23 / 10000 / ms #Msun
+
+        tmpn.append(h2_m)
+
+    nC.append(tmpn[0])    
+    nvC.append(median_absolute_deviation(tmpn) * np.pi / (len(tmpn))**0.5)
+    mC.append(tmpm[0])   
+    mvC.append(median_absolute_deviation(tmpm) * np.pi / (len(tmpm))**0.5)
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012good'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+nE = []
+
+mE = []
+nvE = []
+    
+mvE = []
+
+for i in range(len(filenameE)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+
+
+    
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        mlr = g_data['MLR'][gram[j]] #Msun/yr
+        rin = g_data['Rin'][gram[j]] #Rstar
+        rout = rin * 1000 #Rstar
+        mass = g_data['Mass'][gram[j]] * ms #kg
+        
+        gravity = (10**g_data['logg'][gram[j]])/100 #m/s2
+     
+        r = (G * mass / gravity)**0.5 * rout #m
+        rsqr = G * mass / gravity * rin * rin #m2
+
+        dust = mlr * r/vexp #Msun
+        tmpm.append(dust)
+        
+        h2_n = 10**(c_data['logN'][c2h2[j]]) * 2e4 * 10000 #m-2
+        h2_m = h2_n * 4 * np.pi * rsqr * r_loc * 2 / 6.02e23 / 10000 / ms #Msun
+
+        tmpn.append(h2_m)
+
+    nE.append(tmpn[0])    
+    nvE.append(median_absolute_deviation(tmpn)* np.pi / (len(tmpn))**0.5)
+    mE.append(tmpm[0])   
+    mvE.append(median_absolute_deviation(tmpm)* np.pi / (len(tmpm))**0.5)
+
+
+
+
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/VRO_2012good'):
+    filenameV = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameV.append(files[i])
+nV= []
+
+mV = []
+nvV = []
+    
+mvV = []
+
+for i in range(len(filenameV)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+
+
+    
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        mlr = g_data['MLR'][gram[j]] #Msun/yr
+        rin = g_data['Rin'][gram[j]] #Rstar
+        rout = rin * 1000 #Rstar
+        mass = g_data['Mass'][gram[j]] * ms #kg
+        
+        gravity = (10**g_data['logg'][gram[j]])/100 #m/s2
+     
+        r = (G * mass / gravity)**0.5 * rout #m
+        rsqr = G * mass / gravity * rin * rin #m2
+
+        dust = mlr * r/vexp #Msun
+        tmpm.append(dust)
+        
+        h2_n = 10**(c_data['logN'][c2h2[j]]) * 2e4 * 10000 #m-2
+        h2_m = h2_n * 4 * np.pi * rsqr * r_loc * 2 / 6.02e23 / 10000 / ms #Msun
+
+        tmpn.append(h2_m)
+
+    nV.append(tmpn[0])    
+    nvV.append(median_absolute_deviation(tmpn)* np.pi / (len(tmpn))**0.5)
+    mV.append(tmpm[0])   
+    mvV.append(median_absolute_deviation(tmpm)* np.pi / (len(tmpm))**0.5)
+        
+x200 = np.linspace(1e-6, 1e-3, 100)
+
+median_n = [np.median(nC), np.median(nE), np.median(nV)]
+median_m = [np.median(mC), np.median(mE), np.median(mV)]
+madm_n = [median_absolute_deviation(nC) * np.pi/(len(nC))**0.5, median_absolute_deviation(nE) * np.pi/(len(nE))**0.5, median_absolute_deviation(nV) * np.pi/(len(nV))**0.5]
+madm_m = [median_absolute_deviation(mC) * np.pi/(len(mC))**0.5, median_absolute_deviation(mE) * np.pi/(len(mE))**0.5, median_absolute_deviation(mV) * np.pi/(len(mV))**0.5]
+
+plt.text(9e-4, 2e-1, 'GDR = 200',
+        verticalalignment='bottom', horizontalalignment='right',
+        color='black', fontsize=35)
+
+
+
+plt.xscale('log')
+plt.yscale('log')
+
+plt.errorbar(mE, nE, nvE, mvE, marker = 'o', linestyle = 'none', color = 'blue', lw = 3, ms = 20)
+plt.errorbar(mC, nC, nvC, mvC, marker = 'o', linestyle = 'none', color = 'red', lw = 3, ms = 20)
+
+plt.errorbar(mV, nV, nvV, mvV, marker = 'o', linestyle = 'none', color = 'green', lw = 3, ms = 20)
+plt.errorbar(median_m, median_n, madm_n, madm_m, 'ko', ms = 20, lw = 3, alpha = 0.75)
+
+plt.legend(['CE0-2', 'CE3-4', 'VRO', 'Median'], loc = 'best',fontsize = 35)
+plt.plot(x200 , x200 * 200, 'k--', lw = 3)
+
+plt.fill_between(x200, x200*4, x200*400, facecolor = 'grey', alpha = 0.5, edgecolor = 'grey')
+
+plt.show()
+    
+    

@@ -1,0 +1,128 @@
+import ss_readfits
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from astropy.stats import median_absolute_deviation
+import matplotlib
+
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/2012conv_C2H2.fits")
+
+
+nnn = np.pi / (30)**0.5
+
+
+
+
+plt.figure(figsize = (20,20))
+plt.grid(True)
+matplotlib.rcParams.update({'font.size': 22})
+
+plt.xlabel('Column Density (log)')
+plt.ylabel('Mass Loss Rate (log)')
+
+
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_2012good'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+nC = []
+tC = []
+mC = []
+nvC = []
+tvC = []    
+mvC = []
+
+for i in range(len(filenameC)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+    nC.append(c_data['logN'][c2h2[0]])
+    tC.append(c_data['T'][c2h2[0]])
+    mC.append(np.log10(g_data['MLR'][gram[0]]))
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        tmpn.append(c_data['logN'][c2h2[j]])
+        tmpt.append(c_data['T'][c2h2[j]])
+        tmpm.append(np.log10(g_data['MLR'][gram[j]]))
+    nvC.append(median_absolute_deviation(tmpn)*nnn)
+    tvC.append(median_absolute_deviation(tmpt)*nnn)
+    mvC.append(median_absolute_deviation(tmpm)*nnn)
+        
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012good'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+nE = []
+tE = []
+mE = []
+nvE = []
+tvE = [] 
+mvE = []   
+
+for i in range(len(filenameE)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+    nE.append(c_data['logN'][c2h2[0]])
+    tE.append(c_data['T'][c2h2[0]])
+    mE.append(np.log10(g_data['MLR'][gram[0]]))
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        tmpn.append(c_data['logN'][c2h2[j]])
+        tmpt.append(c_data['T'][c2h2[j]])
+	tmpm.append(np.log10(g_data['MLR'][gram[j]]))
+    nvE.append(median_absolute_deviation(tmpn)*nnn)
+    tvE.append(median_absolute_deviation(tmpt)*nnn)
+    mvE.append(median_absolute_deviation(tmpm)*nnn)
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/VRO_2012good'):
+    filenameV = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameV.append(files[i])
+nV = []
+tV = []
+mV = []
+nvV = []
+tvV = [] 
+mvV = []   
+
+for i in range(len(filenameV)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 0, skip_header = 1, max_rows = 30)
+    
+    nV.append(c_data['logN'][c2h2[0]])
+    tV.append(c_data['T'][c2h2[0]])
+    mV.append(np.log10(g_data['MLR'][gram[0]]))
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        tmpn.append(c_data['logN'][c2h2[j]])
+        tmpt.append(c_data['T'][c2h2[j]])
+	tmpm.append(np.log10(g_data['MLR'][gram[j]]))
+    nvV.append(median_absolute_deviation(tmpn)*nnn)
+    tvV.append(median_absolute_deviation(tmpt)*nnn)
+    mvV.append(median_absolute_deviation(tmpm)*nnn)
+
+print min(nE)
+
+
+plt.errorbar(nC, mC, mvC, nvC, marker = 'o', linestyle = 'none', color = 'red', lw = 3, ms = 15)
+plt.errorbar(nE, mE, mvE, nvE, marker = 'o', linestyle = 'none', color = 'blue', lw = 3, ms = 15)
+plt.errorbar(nV, mV, mvV, nvV, marker = 'o', linestyle = 'none', color = 'green', lw = 3, ms = 15)
+plt.legend(['CE34', 'ECAGB', 'VRO'], loc = 'best')
+plt.show()
+    
+    

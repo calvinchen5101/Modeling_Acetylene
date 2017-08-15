@@ -1,0 +1,51 @@
+import os
+import numpy as np
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB'):
+    filename = files
+    
+iii = 2
+while iii < len(filename):
+    if True:
+	f = open('/arrays/igloo1/ssp201701/CAGB/ECAGB/' + filename[iii], 'r')
+        g = f.read().split()
+        g = np.array(g[3:])
+        print g[0:3]
+        ind1 = np.arange(0,len(g),3)
+        ind2 = np.arange(1,len(g),3)
+        ind3 = np.arange(2,len(g),3)
+        gram = g[ind1]
+        c2h2 = g[ind2]
+        chi = g[ind3]
+
+        #print gram[-1]
+        #print c2h2[-1]
+        #print chi[-1]
+        r_tuples = []
+        for i in range(len(gram)):
+            r_tuples.append((gram[i], c2h2[i], float(chi[i])))
+
+        all_data = sorted(r_tuples, key=lambda r: r[2])
+
+        fff = open('/arrays/igloo1/ssp201701/CAGB/ECAGB_sorted/' + filename[iii], 'w')
+        fff.write('GRAM\t')
+        fff.write('c2h2\t')
+        fff.write('chi_tot\n')
+
+        for i in range(2000):
+            fff.write(str(all_data[i][0]) + '\t')
+            fff.write(str(all_data[i][1]) + '\t')
+            fff.write(str(all_data[i][2]) + '\n')
+            #fff.write(all_data[i][3] + '\n')
+    
+        fff.close()
+        print (iii)
+        i11 +=1
+    else:
+        print filename[iii]
+        iii += 1
+    break
+
+
+    
+    

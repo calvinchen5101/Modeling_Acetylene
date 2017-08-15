@@ -1,0 +1,205 @@
+import ss_readfits
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from astropy.stats import median_absolute_deviation
+
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/allconv_c2h2.fits")
+
+spec_id = list(np.genfromtxt('/asiaa/home/ssp201701/SSID_MLR.txt', usecols = 0, skip_header = 1, dtype = str))
+mlr = list(np.genfromtxt('/asiaa/home/ssp201701/SSID_MLR.txt', usecols = 1, skip_header = 1))
+dmlr = list(np.genfromtxt('/asiaa/home/ssp201701/SSID_MLR.txt', usecols = 2, skip_header = 1))
+print spec_id
+
+#chis = 500
+
+"""
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_sorted10rin'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+nC = []
+tC = []
+mC = []
+nvC = []
+tvC = []    
+mvC = []
+
+for i in range(len(filenameC)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_sorted10rin/' + filenameC[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_sorted10rin/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 30)
+    nC.append(c_data['logN'][c2h2[0]])
+    tC.append(c_data['T'][c2h2[0]])
+    mC.append(np.log10(g_data['MLR'][gram[0]]))
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        tmpn.append(c_data['logN'][c2h2[j]])
+        tmpt.append(c_data['T'][c2h2[j]])
+        tmpm.append(np.log10(g_data['MLR'][gram[j]]))
+    nvC.append(median_absolute_deviation(tmpn))
+    tvC.append(median_absolute_deviation(tmpt))
+    mvC.append(median_absolute_deviation(tmpm))
+        
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_sorted10rin'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+nE = []
+tE = []
+mE = []
+nvE = []
+tvE = [] 
+mvE = []   
+
+for i in range(len(filenameE)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_sorted10rin/' + filenameE[i], usecols = 1, skip_header = 1, max_rows = 30)
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_sorted10rin/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 30)
+    nE.append(c_data['logN'][c2h2[0]])
+    tE.append(c_data['T'][c2h2[0]])
+    mE.append(np.log10(g_data['MLR'][gram[0]]))
+    tmpn = []
+    tmpt = []
+    tmpm = []
+    for j in range(len(c2h2)):
+        tmpn.append(c_data['logN'][c2h2[j]])
+        tmpt.append(c_data['T'][c2h2[j]])
+	tmpm.append(np.log10(g_data['MLR'][gram[j]]))
+    nvE.append(median_absolute_deviation(tmpn))
+    tvE.append(median_absolute_deviation(tmpt))
+    mvE.append(median_absolute_deviation(tmpm))
+
+
+
+plt.errorbar(nE, mE, mvE, nvE, color = 'grey', marker = 'o', linestyle = 'none')
+plt.errorbar(nC, mC, mvC, nvC, color = 'grey', marker = '^', linestyle = 'none')
+
+#plt.errorbar(logNV, tgasV, tgasVD, logNVD, 'go')
+#plt.errorbar(logNCS, tgasCS, tgasCSD, logNCSD, 'ro', fillstyle = 'none')
+#plt.errorbar(logNES, tgasES, tgasESD, logNESD, 'bo', fillstyle = 'none')
+
+#plt.errorbar(logmlrR, logNR, logNRD, logmlrRD, 'ko')
+
+
+#plt.plot(logmlrE, logNE, 'bo', logmlrC, logNC, 'ro', logmlrV, logNV, 'go', logmlrR, logNR, 'ko')
+"""
+plt.grid(True)
+#plt.xlabel('Optical Depth at 11.3 micron')
+plt.xlabel('Column Density (log)')
+plt.ylabel('Mass Loss Rate')
+plt.yscale('log')
+plt.title('Best 30 models')
+#plt.axis([17, 20.5, 0, 900])
+#plt.xscale('log')
+#plt.show()
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_2012good'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+nC = []
+tC = []
+mC = []
+nvC = []
+tvC = []    
+mvC = []
+
+for i in range(len(filenameC)):
+    try:
+        index = spec_id.index(filenameC[i][:-9])
+        c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 1, skip_header = 1, max_rows = 30)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 30)
+        nC.append(c_data['logN'][c2h2[0]])
+        tC.append(c_data['T'][c2h2[0]])
+        mC.append(mlr[index])
+        tmpn = []
+        tmpt = []
+        for j in range(len(c2h2)):
+            tmpn.append(c_data['logN'][c2h2[j]])
+            tmpt.append(c_data['T'][c2h2[j]])
+        
+        nvC.append(median_absolute_deviation(tmpn))
+        tvC.append(median_absolute_deviation(tmpt))
+        mvC.append(dmlr[index])
+    except:
+        None
+        
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012good'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+nE = []
+tE = []
+mE = []
+nvE = []
+tvE = [] 
+mvE = []   
+
+for i in range(len(filenameE)):
+    try:
+        index = spec_id.index(filenameE[i][:-9])
+        c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 1, skip_header = 1, max_rows = 30)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 30)
+        nE.append(c_data['logN'][c2h2[0]])
+        tE.append(c_data['T'][c2h2[0]])
+        mE.append(mlr[index])
+        tmpn = []
+        tmpt = []
+        for j in range(len(c2h2)):
+            tmpn.append(c_data['logN'][c2h2[j]])
+            tmpt.append(c_data['T'][c2h2[j]])
+        
+        nvE.append(median_absolute_deviation(tmpn))
+        tvE.append(median_absolute_deviation(tmpt))
+        mvE.append(dmlr[index])
+    except:
+        None
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/VRO_2012good'):
+    filenameV = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameV.append(files[i])
+nV = []
+tV = []
+mV = []
+nvV = []
+tvV = [] 
+mvV = []   
+
+for i in range(len(filenameV)):
+    try:
+        index = spec_id.index(filenameV[i][:-9])
+        c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 1, skip_header = 1, max_rows = 30)
+        gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 0, skip_header = 1, max_rows = 30)
+        nV.append(c_data['logN'][c2h2[0]])
+        tV.append(c_data['T'][c2h2[0]])
+        mV.append(mlr[index])
+        tmpn = []
+        tmpt = []
+        for j in range(len(c2h2)):
+            tmpn.append(c_data['logN'][c2h2[j]])
+            tmpt.append(c_data['T'][c2h2[j]])
+        
+        nvV.append(median_absolute_deviation(tmpn))
+        tvV.append(median_absolute_deviation(tmpt))
+        mvV.append(dmlr[index])
+    except:
+        None
+plt.errorbar(nC, mC, mvC, nvC, 'ro')
+plt.errorbar(nE, mE, mvE, nvE, 'bo')
+plt.errorbar(nV, mV, mvV, nvV, 'go')
+plt.legend(['CE34', 'ECAGB', 'VRO'], loc = 'best')
+plt.show()
+    
+    

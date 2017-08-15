@@ -1,0 +1,22 @@
+#!/bin/sh
+#this line is a comment; it is ignored during execution
+#you can put any commands that you would normally type into the command line in here.
+#for example, this shell script just creates a directory
+
+python 2000_CE341000.py
+python 2000_CE342000.py
+python 2000_CE343000.py
+python 2000_CE344000.py
+python 2000_CE345000.py
+python 2000_CE346000.py
+python 2000_CE347000.py
+python 2000_CE348000.py
+python 2000_CE349000.py
+python 2000_CE3410000.py
+python 2000_CE3411000.py
+python 2000_CE3412000.py
+python 2000_CE3413000.py
+python sort_CE34.py
+
+
+

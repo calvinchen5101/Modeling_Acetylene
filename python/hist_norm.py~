@@ -1,0 +1,104 @@
+import ss_readfits
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from astropy.stats import median_absolute_deviation
+
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/allconv_c2h2.fits")
+
+
+#chis = 500
+
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_good5rin'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+nC = []
+tC = []
+  
+
+for i in range(len(filenameC)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_sorted5rin/' + filenameC[i], usecols = 1, skip_header = 1, max_rows = 30)
+    for j in range(len(c2h2)):
+        nC.append(c_data['logN'][c2h2[j]])
+        tC.append(c_data['T'][c2h2[j]])
+    
+print nC        
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_good5rin'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+nE = []
+tE = []
+   
+
+for i in range(len(filenameE)):
+    c2h2 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_sorted5rin/' + filenameE[i], usecols = 1, skip_header = 1, max_rows = 30)
+    for j in range(len(c2h2)):
+	nE.append(c_data['logN'][c2h2[j]])
+        tE.append(c_data['T'][c2h2[j]])
+
+while len(tE) < len(tC):
+    tE.append(0)
+
+data = np.vstack([tC, tE]).T
+bins = np.linspace(0, 800, 8)
+plt.hist(data, bins, alpha=0.7, label=['CE34', 'ECAGB'])
+plt.legend(loc='upper left')
+plt.grid(True)
+plt.xlabel('Gas Temperature (K)')
+plt.ylabel('Count')
+plt.show()
+
+#nc, binsc, patchesc = plt.hist(c, 8, range = (15, 19), facecolor='red', alpha=0.5)
+#ne, bine, patchese = plt.hist(e, 8, range = (15, 19), facecolor='blue', alpha=0.5)
+#nv, binsv, patchesv = plt.hist(v, 8, range = (15, 19), facecolor='green', alpha=0.5)
+#ner, binser, patcheser = plt.hist(er, 8, range = (15, 19), facecolor='yellow', alpha=0.5)
+#plt.plot(r, ratio, 'rx')
+"""plt.errorbar(c, cmlr, cd, None, 'ro')
+plt.errorbar(e, emlr, ed, None, 'bo')
+plt.errorbar(v, vmlr, vd, None, 'go')
+plt.errorbar(er, ermlr, erd, None, 'ko')"""
+
+plt.plot(c, ct, 'o', e, et, 'o', v, vt, 'o', er, ert, 'o', label = ['CE34', 'ECAGB', 'VRO', 'ERO'])
+plt.xlabel('Column Density (log)')
+plt.ylabel('Gas Temperature')
+plt.grid(True)
+plt.legend(['CE34', 'ECAGB', 'VRO', 'ERO'], loc = 'upper left')
+plt.axis([14.5, 20.5, None, None])
+#plt.yscale('log')
+
+#plt.yscale('log')
+#plt.title('Blue: ECAGB, Red: CE34, Green: VRO, Black: ERO')
+
+plt.show()
+
+"""
+import numpy as np
+import matplotlib.mlab as mlab
+import matplotlib.pyplot as plt
+
+mu, sigma = 100, 15
+x = mu + sigma*np.random.randn(10000)
+
+# the histogram of the data
+n, bins, patches = plt.hist(x, 50, normed=1, facecolor='green', alpha=0.75)
+
+# add a 'best fit' line
+y = mlab.normpdf( bins, mu, sigma)
+l = plt.plot(bins, y, 'r--', linewidth=1)
+
+plt.xlabel('Smarts')
+plt.ylabel('Probability')
+plt.title(r'$\mathrm{Histogram\ of\ IQ:}\ \mu=100,\ \sigma=15$')
+plt.axis([40, 160, 0, 0.03])
+plt.grid(True)
+
+plt.show()"""

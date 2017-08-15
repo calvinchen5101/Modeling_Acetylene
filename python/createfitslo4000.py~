@@ -1,0 +1,115 @@
+import ss_readfits
+import numpy as np
+from scipy.interpolate import splrep, splev
+import scipy.constants as const
+from astropy.io import fits
+
+ce34 = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4001_spec.txt', usecols = 0)
+
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/allconv_c2h2.fits")
+
+
+ms  = 1.98892e30 #kg
+G = 6.67e-11
+pc = const.parsec
+
+
+def B(v, t):
+    front = (2 * const.h * (v**3))/(const.c**2)
+    den = np.e**(const.h * v/const.k/t) - 1
+    #print np.e**(const.h * v/const.k/t)
+    back = 1/den
+    return front * back 
+
+def IV0(v):
+    return B(v, 3000)
+    
+def recal(i, iabs, v, t):
+    #print ('i - bv')
+    front_num = i - B(v, t)
+    #print front_num
+    back_num = iabs * IV0(v) - B(v, t)
+    #print back_num
+    den = IV0(v) - B(v, t)
+    return (front_num * back_num / den + B(v, t)) * 1e26
+
+lenc = len(c_data['Lspec'])
+lenw = len(ce34)
+#leng = len(g_data['Teff'])
+
+wlenc = c_data['Lspec'][0]
+
+
+cflux = []
+ctemp = c_data['T']
+for i in range(len(c_data['Lspec'])):
+    new_flux = c_data['Fspec'][i]
+    spl = splrep(wlenc, new_flux, k=3)
+    fflux = splev(ce34, spl)
+    cflux.append(fflux)
+
+cflux = np.array(cflux)
+    
+ctemp = ctemp + np.zeros((lenw, lenc))
+ctemp = ctemp.transpose()
+    
+# loop through all dust model
+gram = np.repeat(np.arange(2000, 3000), lenc)
+c2h2 = np.tile(np.arange(lenc), 1000)
+fspec = np.zeros((1, lenw))
+
+for i in range(2000, 3000):
+    gravity = (10**g_data['logg'][i]) / 100 #m/s2
+    
+    mass = g_data['Mass'][i] * ms
+    
+    rin = g_data['Rin'][i]
+    r_sqr = G*mass/gravity * rin**2
+    factor = (50000 * pc)**2/r_sqr/np.pi
+    
+        
+    gflux = g_data['Fspec'][i]
+    spl = splrep(g_data['Lspec'][i], gflux, k = 3)
+    ngflux = splev(ce34, spl)
+    ngflux = ngflux + np.zeros((lenc, lenw)) #Jy
+    ngintens = ngflux * 1e-26 * factor
+    wlen_expand = (ce34 + np.zeros((lenc, lenw))) * 1e-6
+        
+    niu = const.c/wlen_expand
+        
+    ncflux = recal(ngintens, cflux, niu, ctemp)
+    #print (ncflux[0][0])
+        
+    comb = ncflux / factor
+    #print len(c_data['Lspec'][0])
+    fspec = np.concatenate((fspec, comb))
+    
+    #if i == 3:
+        #break
+    print i
+    #print comb[0][0]
+    #print ngflux[0][0]
+
+
+
+fspec = fspec[1:]
+
+
+col1 = fits.Column(name='GRAMS', format = 'I', array=gram)
+col2 = fits.Column(name='C2H2', format = 'I', array=c2h2)
+col4 = fits.Column(name='Fspec', format = '365E', array=fspec)
+
+
+cols = fits.ColDefs([col1, col2, col4])
+
+tbhdu = fits.BinTableHDU.from_columns(cols)
+
+tbhdu.writeto('/arrays/igloo1/ssp201701/fits/Jan_combine3000.fits')
+print ('end')
+
+
+        
+
+    

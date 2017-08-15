@@ -1,0 +1,121 @@
+import ss_readfits
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+import os
+from astropy.stats import median_absolute_deviation
+from scipy.interpolate import splrep, splev
+from scipy.integrate import simps
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+#c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/2012conv_C2H2.fits")
+
+low7 = 20
+up7 = 35
+
+low13 = 13.4
+up13 = 14.1
+
+
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/CE34_mpgood'):
+    filenameC = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameC.append(files[i])
+
+mC = []
+w7C = []
+w13C = []
+
+for i in range(len(filenameC)):
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/' + filenameC[i], usecols = 0, skip_header = 1, max_rows = 1, dtype = int)
+    #print gram
+    cont_wlen = g_data['Lspec'][gram]
+    cont_flux = g_data['Fspec'][gram]
+    sour_wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/' + filenameC[i], usecols = 0)
+    sour_flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/' + filenameC[i], usecols = 1)
+    spl = splrep(cont_wlen, cont_flux, k = 3)
+    cont_flux = splev(sour_wlen, spl)
+    sw7 = sour_wlen[sour_wlen <= up7]
+    #print np.where(sour_wlen >= low7)
+    sw7 = sw7[sw7 >= low7]
+    sf7 = sour_flux[sour_wlen >= low7]
+    sf7 = sf7[:len(sw7)]
+    cf7 = cont_flux[sour_wlen >= low7]
+    cf7 = cf7[:len(sw7)]
+    norm = sf7/cf7
+    eqw7 = simps(1-norm, sw7)
+    w7C.append(eqw7)
+    mC.append(np.log10(g_data['MLR'][gram]))
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/ECAGB_mpgood'):
+    filenameE = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameE.append(files[i])
+
+mE = []
+w7E = []
+w13E = []
+
+for i in range(len(filenameE)):
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/' + filenameE[i], usecols = 0, skip_header = 1, max_rows = 1, dtype = int)
+    cont_wlen = g_data['Lspec'][gram]
+    cont_flux = g_data['Fspec'][gram]
+    sour_wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filenameE[i], usecols = 0)
+    sour_flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/ECAGB/' + filenameE[i], usecols = 1)
+    spl = splrep(cont_wlen, cont_flux, k = 3)
+    cont_flux = splev(sour_wlen, spl)
+    sw7 = sour_wlen[sour_wlen <= up7]
+    #print np.where(sour_wlen >= low7)
+    sw7 = sw7[sw7 >= low7]
+    sf7 = sour_flux[sour_wlen >= low7]
+    sf7 = sf7[:len(sw7)]
+    cf7 = cont_flux[sour_wlen >= low7]
+    cf7 = cf7[:len(sw7)]
+    norm = sf7/cf7
+    eqw7 = simps(1-norm, sw7)
+    w7E.append(eqw7)
+    mE.append(np.log10(g_data['MLR'][gram]))
+
+for root, dirs, files in os.walk('/arrays/igloo1/ssp201701/CAGB/VRO_mpgood'):
+    filenameV = []
+    for i in range(len(files)):
+        if files[i][-4:] == '.txt':
+            filenameV.append(files[i])
+
+mV = []
+w7V = []
+w13V = []
+
+for i in range(len(filenameV)):
+    gram = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/' + filenameV[i], usecols = 0, skip_header = 1, max_rows = 1, dtype = int)
+    cont_wlen = g_data['Lspec'][gram]
+    cont_flux = g_data['Fspec'][gram]
+    sour_wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/VRO/' + filenameV[i], usecols = 0)
+    sour_flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/VRO/' + filenameV[i], usecols = 1)
+    spl = splrep(cont_wlen, cont_flux, k = 3)
+    cont_flux = splev(sour_wlen, spl)
+    sw7 = sour_wlen[sour_wlen <= up7]
+    #print np.where(sour_wlen >= low7)
+    sw7 = sw7[sw7 >= low7]
+    sf7 = sour_flux[sour_wlen >= low7]
+    sf7 = sf7[:len(sw7)]
+    cf7 = cont_flux[sour_wlen >= low7]
+    cf7 = cf7[:len(sw7)]
+    norm = sf7/cf7
+    eqw7 = simps(1-norm, sw7)
+    w7V.append(eqw7)
+    mV.append(np.log10(g_data['MLR'][gram]))
+
+plt.plot(mC, w7C, 'ro', ms = 10)
+plt.plot(mE, w7E, 'bo', ms = 10)
+plt.plot(mV, w7V, 'go', ms = 10)
+plt.grid(True)
+plt.xlabel('dust mass loss rate')
+plt.ylabel('Equivalent Width 30 micron')
+#plt.ylabel('Dust Mass Lost Rate')
+plt.legend(['CE34', 'ECAGB', 'VRO'], loc = 'best')
+plt.show()
+    

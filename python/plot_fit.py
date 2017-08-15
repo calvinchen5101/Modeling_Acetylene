@@ -1,0 +1,391 @@
+"""plot the exaple of good fit in the paper
+"""
+
+
+import numpy as np
+import ss_readfits
+import matplotlib.pyplot as plt
+import matplotlib
+from matplotlib import rc
+from scipy.interpolate import splev, splrep
+from astropy.stats import median_absolute_deviation
+import scipy.constants as const
+
+matplotlib.rcParams.update({'font.size': 35})
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/2012conv_C2H2.fits")
+tau_wlen = np.genfromtxt('/arrays/igloo1/ssp201701/relative_tau.dat', usecols = 0)
+rel_tau = np.genfromtxt('/arrays/igloo1/ssp201701/relative_tau.dat', usecols = 1)
+
+ms  = 1.98892e30 #kg
+G = 6.67e-11
+pc = const.parsec
+
+loca = 10
+
+def B(v, t):
+    front = (2 * const.h * (v**3))/(const.c**2)
+    den = np.e**(const.h * v/const.k/t) - 1
+    #print np.e**(const.h * v/const.k/t)
+    back = 1/den
+    return front * back 
+
+def IV0(v):
+    return B(v, 3000)
+    
+def recal(i, iabs, v, t):
+    #print ('i - bv')
+    front_num = i - B(v, t)
+    #print front_num
+    back_num = iabs * IV0(v) - B(v, t)
+    #print back_num
+    den = IV0(v) - B(v, t)
+    return (front_num * back_num / den + B(v, t)) * 1e26
+
+
+
+rc('font', **{'family':'serif','serif':['Palatino']})
+rc('text', usetex=True)
+
+f, axarr = plt.subplots(4, sharex=True, figsize = (20, 60))
+plt.xlabel('wavelength [' + r'$\mu$' + 'm]')
+plt.ylabel('flux [Jy]')
+
+
+
+wlen = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/ECAGB/66_spec.txt', usecols = 0)
+flux = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/ECAGB/66_spec.txt', usecols = 1)
+v = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/ECAGB/66_spec.txt', usecols = 2)
+
+
+
+
+axarr[0].plot(wlen, flux, 'k-', lw = 3)
+axarr[0].fill_between(wlen, flux - v, flux + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+
+allflux = []
+gram100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/66_spec.txt', usecols = 0, skip_header = 1, max_rows = 30)
+c2h2100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/ECAGB_2012sorted/66_spec.txt', usecols = 1, skip_header = 1, max_rows = 30)
+
+for j in range(len(gram100)):
+    gwlen = g_data['Lspec'][gram100[j]]
+    gflux = g_data['Fspec'][gram100[j]]
+    cwlen = c_data['Lspec'][c2h2100[j]]
+    cflux = c_data['Fspec'][c2h2100[j]]
+    spl = splrep(gwlen, gflux, k=3)
+    ggflux = splev(wlen, spl)
+    spl = splrep(cwlen, cflux, k=3)
+    ccflux = splev(wlen, spl)
+    ctemp = c_data['T'][c2h2100[j]]
+    gravity = (10**g_data['logg'][gram100[j]]) / 100 #m/s2
+  
+    mass = g_data['Mass'][gram100[j]] * ms
+ 
+    rin = g_data['Rin'][gram100[j]]
+    r_sqr = G*mass/gravity
+       
+    factor_out = (50000 * pc)**2/r_sqr/np.pi/loca/loca/rin/rin
+    factor_photo = (50000 * pc)**2/r_sqr/np.pi
+           
+    photoflux = g_data['Fstar'][gram100[j]]
+    tau = g_data['tau11_3'][gram100[j]]
+    rel_tau = rel_tau * tau
+    spl = splrep(tau_wlen, rel_tau, k = 3)
+    rel_tau, obs_tau = splev(gwlen, spl), splev(wlen, spl)
+    
+    photoflux = photoflux * np.e**(-rel_tau *(loca-1)/loca)###
+    gggflux = gflux * (1-np.e**(-rel_tau/loca))
+    spl = splrep(gwlen, gggflux, k = 3)
+    gggflux = splev(wlen, spl)
+    gflux = gflux - photoflux
+    spl = splrep(gwlen, gflux, k = 3)
+    ngflux = splev(wlen, spl)
+    spl = splrep(gwlen, photoflux, k = 3)
+    npflux = splev(wlen, spl)
+    intens_photo = npflux * 1e-26 * factor_photo
+    intens_out = ngflux * 1e-26 * factor_out
+
+    intens_sum = intens_photo + intens_out
+    ratio = intens_photo / intens_sum
+    wlen_expand = wlen * 1e-6
+        
+    niu = const.c/wlen_expand
+        
+    ncflux = recal(intens_sum, ccflux, niu, ctemp)
+    comb_photo = ncflux * ratio / factor_photo 
+    comb_out = ncflux * (1-ratio) / factor_out    
+    comb = comb_photo + comb_out
+    comb = comb * np.e**(-obs_tau/loca)
+    comb = comb + gggflux
+    allflux.append(comb)
+
+best = allflux[0]
+mad = median_absolute_deviation(allflux, axis = 0) * np.pi / (30)**0.5
+axarr[0].plot(wlen, best, 'r-', lw = 3, alpha = 0.75)
+axarr[0].fill_between(wlen, best - mad, best + mad, facecolor = 'pink', edgecolor = 'pink', alpha = 0.75)
+axarr[0].grid(True)
+
+ax2 = axarr[0].twinx()
+ax2.plot(wlen, flux/best, 'orange', lw = 3)
+ax2.fill_between(wlen, flux/best - v/flux, flux/best + v/flux, facecolor = 'yellow', alpha = 0.25, edgecolor = 'yellow')
+ax2.axis([None,None,0,6])
+ax2.plot([0,40],[1,1],'k--', lw = 3)
+
+axarr[0].legend(['Observed', 'Best Fit'], loc = 'upper right', fontsize = 35)
+ax2.legend(['Residual'], loc = 'lower right', fontsize = 35)
+axarr[0].text(10, 0, 'SSID: 66\nGroup: CE0-2', verticalalignment='top', horizontalalignment='left',color='black', fontsize=35)
+
+
+wlen = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4016_spec.txt', usecols = 0)
+flux = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4016_spec.txt', usecols = 1)
+v = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4016_spec.txt', usecols = 2)
+
+axarr[1].plot(wlen, flux, 'k-', lw = 3)
+axarr[1].fill_between(wlen, flux - v, flux + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+
+allflux = []
+gram100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/4016_spec.txt', usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+c2h2100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/4016_spec.txt', usecols = 1, skip_header = 1, max_rows = 30, dtype = int)
+
+for j in range(len(gram100)):
+    gwlen = g_data['Lspec'][gram100[j]]
+    gflux = g_data['Fspec'][gram100[j]]
+    cwlen = c_data['Lspec'][c2h2100[j]]
+    cflux = c_data['Fspec'][c2h2100[j]]
+    spl = splrep(gwlen, gflux, k=3)
+    ggflux = splev(wlen, spl)
+    spl = splrep(cwlen, cflux, k=3)
+    ccflux = splev(wlen, spl)
+    ctemp = c_data['T'][c2h2100[j]]
+    gravity = (10**g_data['logg'][gram100[j]]) / 100 #m/s2
+  
+    mass = g_data['Mass'][gram100[j]] * ms
+ 
+    rin = g_data['Rin'][gram100[j]]
+    r_sqr = G*mass/gravity
+       
+    factor_out = (50000 * pc)**2/r_sqr/np.pi/loca/loca/rin/rin
+    factor_photo = (50000 * pc)**2/r_sqr/np.pi
+           
+    photoflux = g_data['Fstar'][gram100[j]]
+    tau = g_data['tau11_3'][gram100[j]]
+    rel_tau = rel_tau * tau
+    spl = splrep(tau_wlen, rel_tau, k = 3)
+    rel_tau, obs_tau = splev(gwlen, spl), splev(wlen, spl)
+    
+    photoflux = photoflux * np.e**(-rel_tau *(loca-1)/loca)###
+    gggflux = gflux * (1-np.e**(-rel_tau/loca))
+    spl = splrep(gwlen, gggflux, k = 3)
+    gggflux = splev(wlen, spl)
+    gflux = gflux - photoflux
+    spl = splrep(gwlen, gflux, k = 3)
+    ngflux = splev(wlen, spl)
+    spl = splrep(gwlen, photoflux, k = 3)
+    npflux = splev(wlen, spl)
+    intens_photo = npflux * 1e-26 * factor_photo
+    intens_out = ngflux * 1e-26 * factor_out
+
+    intens_sum = intens_photo + intens_out
+    ratio = intens_photo / intens_sum
+    wlen_expand = wlen * 1e-6
+        
+    niu = const.c/wlen_expand
+        
+    ncflux = recal(intens_sum, ccflux, niu, ctemp)
+    comb_photo = ncflux * ratio / factor_photo 
+    comb_out = ncflux * (1-ratio) / factor_out    
+    comb = comb_photo + comb_out
+    comb = comb * np.e**(-obs_tau/loca)
+    comb = comb + gggflux
+    allflux.append(comb)
+
+best = allflux[0]
+mad = median_absolute_deviation(allflux, axis = 0) * np.pi / (30)**0.5
+axarr[1].plot(wlen, best, 'r-', lw = 3, alpha = 0.75)
+axarr[1].fill_between(wlen, best - mad, best + mad, facecolor = 'pink', edgecolor = 'pink', alpha = 0.75)
+axarr[1].grid(True)
+
+ax2 = axarr[1].twinx()
+ax2.plot(wlen, flux/best, 'orange', lw = 3)
+ax2.fill_between(wlen, flux/best - v/flux, flux/best + v/flux, facecolor = 'yellow', alpha = 0.25, edgecolor = 'yellow')
+ax2.axis([None,None,0,6])
+ax2.plot([0,40],[1,1],'k--', lw = 3)
+
+axarr[1].legend(['Observed', 'Best Fit'], loc = 'upper right', fontsize = 35)
+ax2.legend(['Residual'], loc = 'lower right', fontsize = 35)
+ax2.text(10,2.5, 'SSID: 4016\nGroup: CE3-4', verticalalignment='top', horizontalalignment='left',color='black', fontsize=35)
+
+
+
+wlen = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4001_spec.txt', usecols = 0)
+flux = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4001_spec.txt', usecols = 1)
+v = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/CE34/4001_spec.txt', usecols = 2)
+
+axarr[2].plot(wlen, flux, 'k-', lw = 3)
+axarr[2].fill_between(wlen, flux - v, flux + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+
+allflux = []
+gram100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/4001_spec.txt', usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+c2h2100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/CE34_2012sorted/4001_spec.txt', usecols = 1, skip_header = 1, max_rows = 30, dtype = int)
+
+for j in range(len(gram100)):
+    gwlen = g_data['Lspec'][gram100[j]]
+    gflux = g_data['Fspec'][gram100[j]]
+    cwlen = c_data['Lspec'][c2h2100[j]]
+    cflux = c_data['Fspec'][c2h2100[j]]
+    spl = splrep(gwlen, gflux, k=3)
+    ggflux = splev(wlen, spl)
+    spl = splrep(cwlen, cflux, k=3)
+    ccflux = splev(wlen, spl)
+    ctemp = c_data['T'][c2h2100[j]]
+    gravity = (10**g_data['logg'][gram100[j]]) / 100 #m/s2
+  
+    mass = g_data['Mass'][gram100[j]] * ms
+ 
+    rin = g_data['Rin'][gram100[j]]
+    r_sqr = G*mass/gravity
+       
+    factor_out = (50000 * pc)**2/r_sqr/np.pi/loca/loca/rin/rin
+    factor_photo = (50000 * pc)**2/r_sqr/np.pi
+           
+    photoflux = g_data['Fstar'][gram100[j]]
+    tau = g_data['tau11_3'][gram100[j]]
+    rel_tau = rel_tau * tau
+    spl = splrep(tau_wlen, rel_tau, k = 3)
+    rel_tau, obs_tau = splev(gwlen, spl), splev(wlen, spl)
+    
+    photoflux = photoflux * np.e**(-rel_tau *(loca-1)/loca)###
+    gggflux = gflux * (1-np.e**(-rel_tau/loca))
+    spl = splrep(gwlen, gggflux, k = 3)
+    gggflux = splev(wlen, spl)
+    gflux = gflux - photoflux
+    spl = splrep(gwlen, gflux, k = 3)
+    ngflux = splev(wlen, spl)
+    spl = splrep(gwlen, photoflux, k = 3)
+    npflux = splev(wlen, spl)
+    intens_photo = npflux * 1e-26 * factor_photo
+    intens_out = ngflux * 1e-26 * factor_out
+
+    intens_sum = intens_photo + intens_out
+    ratio = intens_photo / intens_sum
+    wlen_expand = wlen * 1e-6
+        
+    niu = const.c/wlen_expand
+        
+    ncflux = recal(intens_sum, ccflux, niu, ctemp)
+    comb_photo = ncflux * ratio / factor_photo 
+    comb_out = ncflux * (1-ratio) / factor_out    
+    comb = comb_photo + comb_out
+    comb = comb * np.e**(-obs_tau/loca)
+    comb = comb + gggflux
+    allflux.append(comb)
+
+best = allflux[0]
+mad = median_absolute_deviation(allflux, axis = 0) * np.pi / (30)**0.5
+axarr[2].plot(wlen, best, 'r-', lw = 3, alpha = 0.75)
+axarr[2].fill_between(wlen, best - mad, best + mad, facecolor = 'pink', edgecolor = 'pink', alpha = 0.75)
+axarr[2].grid(True)
+
+ax2 = axarr[2].twinx()
+ax2.plot(wlen, flux/best, 'orange', lw = 3)
+ax2.fill_between(wlen, flux/best - v/flux, flux/best + v/flux, facecolor = 'yellow', alpha = 0.25, edgecolor = 'yellow')
+ax2.axis([None,None,0,6])
+ax2.plot([0,40],[1,1],'k--', lw = 3)
+
+axarr[2].legend(['Observed', 'Best Fit'], loc = 'upper right', fontsize = 35)
+ax2.legend(['Residual'], loc = 'lower right', fontsize = 35)
+
+ax2.text(10,2.5, 'SSID: 4001\nGroup: CE3-4', verticalalignment='top', horizontalalignment='left',color='black', fontsize=35)
+
+
+
+
+
+wlen = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/VRO/18_spec.txt', usecols = 0)
+flux = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/VRO/18_spec.txt', usecols = 1)
+v = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB_spectrum/VRO/18_spec.txt', usecols = 2)
+
+axarr[3].plot(wlen, flux, 'k-', lw = 3)
+axarr[3].fill_between(wlen, flux - v, flux + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+
+allflux = []
+gram100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/18_spec.txt', usecols = 0, skip_header = 1, max_rows = 30, dtype = int)
+c2h2100 = np.genfromtxt('/arrays/igloo1/ssp201701/CAGB/VRO_2012sorted/18_spec.txt', usecols = 1, skip_header = 1, max_rows = 30, dtype = int)
+
+for j in range(len(gram100)):
+    gwlen = g_data['Lspec'][gram100[j]]
+    gflux = g_data['Fspec'][gram100[j]]
+    cwlen = c_data['Lspec'][c2h2100[j]]
+    cflux = c_data['Fspec'][c2h2100[j]]
+    spl = splrep(gwlen, gflux, k=3)
+    ggflux = splev(wlen, spl)
+    spl = splrep(cwlen, cflux, k=3)
+    ccflux = splev(wlen, spl)
+    ctemp = c_data['T'][c2h2100[j]]
+    gravity = (10**g_data['logg'][gram100[j]]) / 100 #m/s2
+  
+    mass = g_data['Mass'][gram100[j]] * ms
+ 
+    rin = g_data['Rin'][gram100[j]]
+    r_sqr = G*mass/gravity
+       
+    factor_out = (50000 * pc)**2/r_sqr/np.pi/loca/loca/rin/rin
+    factor_photo = (50000 * pc)**2/r_sqr/np.pi
+           
+    photoflux = g_data['Fstar'][gram100[j]]
+    tau = g_data['tau11_3'][gram100[j]]
+    rel_tau = rel_tau * tau
+    spl = splrep(tau_wlen, rel_tau, k = 3)
+    rel_tau, obs_tau = splev(gwlen, spl), splev(wlen, spl)
+    
+    photoflux = photoflux * np.e**(-rel_tau *(loca-1)/loca)###
+    gggflux = gflux * (1-np.e**(-rel_tau/loca))
+    spl = splrep(gwlen, gggflux, k = 3)
+    gggflux = splev(wlen, spl)
+    gflux = gflux - photoflux
+    spl = splrep(gwlen, gflux, k = 3)
+    ngflux = splev(wlen, spl)
+    spl = splrep(gwlen, photoflux, k = 3)
+    npflux = splev(wlen, spl)
+    intens_photo = npflux * 1e-26 * factor_photo
+    intens_out = ngflux * 1e-26 * factor_out
+
+    intens_sum = intens_photo + intens_out
+    ratio = intens_photo / intens_sum
+    wlen_expand = wlen * 1e-6
+        
+    niu = const.c/wlen_expand
+        
+    ncflux = recal(intens_sum, ccflux, niu, ctemp)
+    comb_photo = ncflux * ratio / factor_photo 
+    comb_out = ncflux * (1-ratio) / factor_out    
+    comb = comb_photo + comb_out
+    comb = comb * np.e**(-obs_tau/loca)
+    comb = comb + gggflux
+    allflux.append(comb)
+
+best = allflux[0]
+mad = median_absolute_deviation(allflux, axis = 0) * np.pi / (30)**0.5
+axarr[3].plot(wlen, best, 'r-', lw = 3, alpha = 0.75)
+axarr[3].fill_between(wlen, best - mad, best + mad, facecolor = 'pink', edgecolor = 'pink', alpha = 0.75)
+axarr[3].grid(True)
+
+ax2 = axarr[3].twinx()
+ax2.plot(wlen, flux/best, 'orange', lw = 3)
+ax2.fill_between(wlen, flux/best - v/flux, flux/best + v/flux, facecolor = 'yellow', alpha = 0.25, edgecolor = 'yellow')
+ax2.axis([None,None,0,6])
+ax2.plot([0,40],[1,1],'k--', lw = 3)
+
+axarr[3].axis([5, 37, None, None])
+axarr[3].legend(['Observed', 'Best Fit'], loc = 'upper right', fontsize = 35)
+ax2.legend(['Residual'], loc = 'lower right', fontsize = 35)
+
+axarr[3].text(10, 0.1, 'SSID: 18\nGroup: VRO', verticalalignment='top', horizontalalignment='left',color='black', fontsize=35)
+
+
+
+
+
+plt.savefig('4444.png')
+plt.close()

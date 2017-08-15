@@ -1,0 +1,14 @@
+#!/bin/sh
+#this line is a comment; it is ignored during execution
+#you can put any commands that you would normally type into the command line in here.
+#for example, this shell script just creates a directory
+
+
+python createfitslo6000.py
+python createfitslo7000.py
+python createfitslo8000.py
+python createfitslo9000.py
+python createfitslo10000.py
+python createfitslo11000.py
+python createfitslo12000.py
+python createfitslo13000.py

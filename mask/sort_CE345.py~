@@ -1,0 +1,51 @@
+import os
+
+for root, dirs, files in os.walk('/data/ssp201701/CE34_r1'):
+    filename = files
+    
+iii = 0
+while iii < len(filename):
+    f = open('/data/ssp201701/CE34_r1/' + filename[iii], 'r')
+    l_data = f.read().split()[4:]
+
+    gram = []
+    #gas = []
+    r = []
+    #ratio = []
+    r_tuples = []
+
+    for i in range(len(l_data)):
+        if i % 2 == 0:
+            gram.append(l_data[i])
+        else:
+            r.append(float(l_data[i]))
+        #elif i % 4 == 2:
+            #r.append(float(l_data[i]))
+        #else:
+            #ratio.append(l_data[i])
+
+
+    for i in range(len(gram)):
+        r_tuples.append((gram[i], r[i]))
+
+    all_data = sorted(r_tuples, key=lambda r: r[1])
+
+    fff = open('CAGB/CE34_G/' + filename[iii], 'w')
+    fff.write('GRAM\t')
+    fff.write('c2h2\t')
+    fff.write('r_tot\t\t')
+    fff.write('ratio\n')
+
+
+    for i in range(2000):
+        fff.write(all_data[i][0] + '\t\t')
+        #fff.write(all_data[i][1] + '\t')
+        fff.write(str(all_data[i][1]) + '\n')
+        #fff.write(all_data[i][3] + '\n')
+    
+    fff.close()
+    print (iii)
+    iii += 1
+
+    
+    

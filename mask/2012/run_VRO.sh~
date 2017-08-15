@@ -1,0 +1,19 @@
+#!/bin/sh
+#this line is a comment; it is ignored during execution
+#you can put any commands that you would normally type into the command line in here.
+#for example, this shell script just creates a directory
+
+python VRO1300.py
+python VRO2600.py
+python VRO3900.py
+python VRO5200.py
+python VRO6500.py
+python VRO7800.py
+python VRO9100.py
+python VRO10400.py
+python VRO11700.py
+python VRO13000.py
+python sort_VRO.py
+
+
+

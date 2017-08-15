@@ -1,0 +1,26 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+
+wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4001_spec.txt', usecols = 0)
+flux = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4001_spec.txt', usecols = 1)
+v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4001_spec.txt', usecols = 2)
+
+plt.figure(figsize = (20,20))
+matplotlib.rcParams.update({'font.size': 35})
+
+plt.fill_between(wlen, flux - v, flux + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+
+plt.plot(wlen, flux, 'k-', lw = 3)
+	
+plt.xlabel('wavelength [' + r'$\mu$' + 'm]')
+plt.ylabel('flux [Jy]')
+plt.axis([5, 20, 0.1, 0.25])
+plt.fill_between([5.5, 6.5],[-100, -100], [100, 100], facecolor = 'orange', edgecolor = 'orange', alpha = 0.5)
+plt.fill_between([8.5, 10],[-100, -100], [100, 100], facecolor = 'orange', edgecolor = 'orange', alpha = 0.5)
+plt.fill_between([11.5, 12.5],[-100, -100], [100, 100], facecolor = 'orange', edgecolor = 'orange', alpha = 0.5)
+plt.fill_between([16, 20],[-100, -100], [100, 100], facecolor = 'orange', edgecolor = 'orange', alpha = 0.5)
+        
+plt.text(19.5, 0.245, 'SSID: 4001\nGroup: CE3-4', verticalalignment='top', horizontalalignment='right',color='black', fontsize=50)
+plt.grid(True)
+plt.show()

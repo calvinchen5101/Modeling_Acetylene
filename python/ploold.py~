@@ -1,0 +1,115 @@
+import os
+import ss_readfits
+import numpy as np
+from astropy.stats import median_absolute_deviation
+import matplotlib.pyplot as plt
+import scipy.constants as const
+from scipy.interpolate import splrep, splev
+
+g_data, g_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/grams_c.fits")
+c_data, c_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/allconv_c2h2.fits")
+#i_data, i_tags = ss_readfits.ss_readfits("/arrays/igloo1/ssp201701/fits/inform_c2h2.fits")
+#data, tags = ss_readfits.ss_readfits("/data/ssp201701/Jan_combine2000.fits")
+#print data['Fspec'][975*417+372]
+
+ms  = 1.98892e30 #kg
+G = 6.67e-11
+pc = const.parsec
+
+
+def B(v, t):
+    front = (2 * const.h * (v**3))/(const.c**2)
+    den = np.e**(const.h * v/const.k/t) - 1
+    #print np.e**(const.h * v/const.k/t)
+    back = 1/den
+    return front * back 
+
+def IV0(v):
+    return B(v, 3000)
+    
+def recal(i, iabs, v, t):
+    #print ('i - bv')
+    front_num = i - B(v, t)
+    #print front_num
+    back_num = iabs * IV0(v) - B(v, t)
+    #print back_num
+    den = IV0(v) - B(v, t)
+    return (front_num * back_num / den + B(v, t)) * 1e26
+
+i = 0
+ind = 9879
+while True:
+    wlen = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4003_spec.txt', usecols = 0)
+    
+    observed = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4003_spec.txt', usecols = 1)
+
+    #tau_wlen = np.genfromtxt('/arrays/igloo1/ssp201701/relative_tau.dat', usecols = 0)
+    #rel_tau = np.genfromtxt('/arrays/igloo1/ssp201701/relative_tau.dat', usecols = 1)
+    #print observed
+    v = np.genfromtxt('/asiaa/home/ssp201701/CAGB/CE34/4003_spec.txt', usecols = 2)
+    gravity = (10**g_data['logg'][ind]) / 100 #m/s2
+    
+    mass = g_data['Mass'][ind] * ms
+    
+    rin = g_data['Rin'][ind]
+    r_sqr = G*mass/gravity
+    factor_out = (50000 * pc)**2/r_sqr/np.pi/rin/rin
+    #factor_photo = (50000 * pc)**2/r_sqr/np.pi
+    
+        
+    gflux = g_data['Fspec'][ind]
+    #photoflux = g_data['Fstar'][ind]
+    #tau = g_data['tau11_3'][ind]
+
+    #rel_tau = rel_tau * tau
+    #spl = splrep(tau_wlen, rel_tau, k = 3)
+    #rel_tau = splev(g_data['Lspec'][ind], spl)
+    #print mass
+    #print g_data['Rin'][ind]
+    #print g_data['logg'][ind]
+    #print tau
+
+    #photoflux = photoflux * np.e**(-rel_tau *0.9)###
+    spl = splrep(g_data['Lspec'][ind], gflux, k = 3)
+    gramsflux = splev(wlen, spl)
+    #gflux = gflux - photoflux
+    #spl = splrep(g_data['Lspec'][ind], gflux, k = 3)
+    #ngflux = splev(wlen, spl)
+    #spl = splrep(g_data['Lspec'][ind], photoflux, k = 3)
+    #npflux = splev(wlen, spl)
+    #intens_photo = npflux * 1e-26 * factor_photo
+    intens_out = gramsflux * 1e-26 * factor_out
+
+    #intens_sum = intens_photo + intens_out
+    #ratio = intens_photo / intens_sum
+    #ratio = 1 ###
+    wlen_expand = wlen * 1e-6
+        
+    niu = const.c/wlen_expand
+    cflux = c_data['Fspec'][425]
+    spl = splrep(c_data['Lspec'][425], cflux, k = 3)
+    cflux = splev(wlen, spl)
+    ctemp = c_data['T'][425]
+    print ctemp
+    print c_data['logN'][425]
+        
+    ncflux = recal(intens_out, cflux, niu, ctemp)
+    #comb_photo = ncflux * ratio / factor_photo 
+    #comb_out = ncflux * (1-ratio) / factor_out    
+    #comb = comb_photo + comb_out
+    #comb = comb_photo + ngflux ###
+    comb = ncflux/factor_out
+
+
+    plt.plot(wlen, observed, 'k-', wlen, comb, 'r-')
+    plt.fill_between(wlen, observed - v, observed + v, facecolor = 'grey', edgecolor = 'grey', alpha = 0.5)
+    #plt.fill_between(wlen, flux[0] - mad, flux[0] + mad, facecolor = 'pink', edgecolor = 'pink', alpha = 0.5)
+    #plt.title('Best 100 model of' + filename[i])
+    #plt.legend(['Original Model', 'Modified Model'], loc = 'upper right')
+    plt.title('T = '+str(ctemp)+', logN = '+str(c_data['logN'][425]))
+    #plt.axis([5,25,0.5,1.2])
+    plt.show()
+    #plt.savefig('CE34_sorted/' + filename[i][:-3] + 'png')
+    #plt.close()
+    break
+
